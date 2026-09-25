@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="es" class="scroll-smooth bg-[#050507] text-neutral-100">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Augusto Belloni | Filmmaker & 3D Drone Pilot</title>
+  
+  <!-- Fonts & Tailwind -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            mono: ['"Space Grotesk"', 'monospace'],
+          },
+          colors: {
+            cyanHud: '#00f2fe',
+            cyanGlow: '#4facfe',
+            goldHud: '#e2b36e',
+            darkDepth: '#07070a',
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* 3D Scene Perspectiva */
+    .perspective-stage {
+      perspective: 1200px;
+      perspective-origin: center center;
+    }
+    
+    .preserve-3d {
+      transform-style: preserve-3d;
+    }
+
+    /* Cinematic Scanlines & HUD grid */
+    .hud-grid {
+      background-image: 
+        linear-gradient(rgba(0, 242, 254, 0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 242, 254, 0.04) 1px, transparent 1px);
+      background-size: 50px 50px;
+    }
+
+    .hud-crosshair::before, .hud-crosshair::after {
+      content: '';
+      position: absolute;
+      background: rgba(0, 242, 254, 0.4);
+    }
+    .hud-crosshair::before { width: 14px; height: 1px; top: 50%; left: -20px; }
+    .hud-crosshair::after { height: 14px; width: 1px; left: 50%; top: -20px; }
+
+    /* Custom smooth transition for parallax tilt */
+    .smooth-tilt {
+      transition: transform 0.15s cubic-bezier(0.2, 0, 0.2, 1);
+      will-change: transform;
+    }
+
+    /* Video Embed Aspect */
+    .video-aspect {
+      position: relative;
+      padding-bottom: 56.25%;
+      height: 0;
+    }
+    .video-aspect iframe {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* Custom glowing scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #050507;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #1f232e;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #00f2fe;
+    }
+  </style>
+</head>
+<body class="bg-[#050507] text-neutral-100 overflow-x-hidden selection:bg-cyanHud selection:text-black">
+
+  <!-- HUD telemetry header -->
+  <header class="fixed top-0 left-0 w-full z-50 bg-[#050507]/80 backdrop-blur-xl border-b border-white/5">
+    <div class="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+      <a href="#" class="flex items-center gap-3 group">
+        <div class="relative w-8 h-8 rounded-lg bg-white/5 border border-cyanHud/30 flex items-center justify-center group-hover:border-cyanHud transition">
+          <div class="w-2.5 h-2.5 rounded-full bg-cyanHud animate-ping opacity-75"></div>
+          <div class="w-2 h-2 rounded-full bg-cyanHud absolute"></div>
+        </div>
+        <div class="flex flex-col">
+          <span class="text-sm font-bold tracking-widest uppercase font-mono text-white">Augusto Belloni</span>
+          <span class="text-[10px] tracking-wider text-cyanHud/80 font-mono">FPV // 3D LIDAR // CINEMA</span>
+        </div>
+      </a>
+
+      <!-- Desktop Nav -->
+      <nav class="hidden md:flex items-center gap-8 text-xs uppercase tracking-widest font-mono text-neutral-400">
+        <a href="#showreel" class="hover:text-cyanHud transition flex items-center gap-1.5">
+          <span class="text-[10px] text-neutral-600">01</span> SHOWREEL
+        </a>
+        <a href="#projects" class="hover:text-cyanHud transition flex items-center gap-1.5">
+          <span class="text-[10px] text-neutral-600">02</span> PROYECTOS 3D
+        </a>
+        <a href="#services" class="hover:text-cyanHud transition flex items-center gap-1.5">
+          <span class="text-[10px] text-neutral-600">03</span> CAPACIDADES
+        </a>
+        <a href="#contact" class="hover:text-cyanHud transition flex items-center gap-1.5">
+          <span class="text-[10px] text-neutral-600">04</span> BOOKING
+        </a>
+      </nav>
+
+      <a href="#contact" class="hidden sm:inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-white text-black font-semibold text-xs tracking-wider uppercase font-mono hover:bg-cyanHud hover:shadow-[0_0_25px_rgba(0,242,254,0.4)] transition duration-300">
+        <span>Cotizar Vuelo</span>
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+      </a>
+    </div>
+  </header>
+
+  <section id="hero" class="relative min-h-[105vh] flex items-center justify-center overflow-hidden perspective-stage pt-20">
+    
+    <!-- LAYER 1: Deep Background Parallax (Luxury Architecture & Horizon) -->
+    <div id="parallax-layer-bg" class="absolute inset-0 w-full h-[120%] -top-[10%] bg-cover bg-center will-change-transform scale-110 pointer-events-none"
+         style="background-image: linear-gradient(to bottom, rgba(5,5,7,0.4) 0%, rgba(5,5,7,0.7) 65%, #050507 100%), url('https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=2200&q=85');">
+    </div>
+
+    <!-- LAYER 2: 3D Flight HUD Grid & Scanning Vectors -->
+    <div id="parallax-layer-mid" class="absolute inset-0 w-full h-full hud-grid opacity-30 pointer-events-none will-change-transform"></div>
+
+    <!-- Drone HUD Overlay Vector Elements -->
+    <div class="absolute inset-0 pointer-events-none max-w-7xl mx-auto px-6 flex flex-col justify-between py-24 select-none">
+      <div class="flex justify-between items-start font-mono text-[11px] text-cyanHud/60">
+        <div class="p-3 border-l-2 border-t-2 border-cyanHud/40 space-y-1">
+          <p>SYS: OPTICAL FLIGHT READY</p>
+          <p>GYRO: 3-AXIS STABILIZED</p>
+          <p>ALT: 120M AGL • LAT 4K RAW</p>
+        </div>
+        <div class="p-3 border-r-2 border-t-2 border-cyanHud/40 text-right space-y-1">
+          <p>FOV: 145° ULTRA-WIDE</p>
+          <p>FPS: 120 PRORES HQ</p>
+          <p class="text-emerald-400 flex items-center justify-end gap-1.5">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span> REC READY
+          </p>
+        </div>
+      </div>
+
+      <!-- Center Reticle / Drone Sight -->
+      <div class="self-center relative flex items-center justify-center opacity-40">
+        <div class="w-48 h-48 rounded-full border border-cyanHud/20 border-dashed animate-spin" style="animation-duration: 40s;"></div>
+        <div class="absolute w-24 h-24 rounded-full border border-cyanHud/40"></div>
+        <div class="absolute w-2 h-2 rounded-full bg-cyanHud"></div>
+        <span class="absolute -top-7 font-mono text-[9px] text-cyanHud tracking-widest">3D MAPPING LOCK</span>
+      </div>
+
+      <div class="flex justify-between items-end font-mono text-[11px] text-neutral-500">
+        <div class="p-3 border-l-2 border-b-2 border-white/10">
+          <p>REAL ESTATE LUXURY FILMING</p>
+          <p class="text-neutral-400">PUNTA DEL ESTE • MIAMI • MADRID</p>
+        </div>
+        <div class="p-3 border-r-2 border-b-2 border-white/10 text-right">
+          <p>PILOT LIC: ANAC CERTIFIED</p>
+          <p class="text-cyanHud/70">AUTONOMOUS PHOTOGRAMMETRY</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- LAYER 3: Foreground Main Typography & CTA (High Parallax Speed & 3D Tilt) -->
+    <div id="parallax-layer-fg" class="relative z-10 text-center max-w-4xl mx-auto px-6 preserve-3d will-change-transform">
+      <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-black/60 border border-cyanHud/30 backdrop-blur-md mb-8">
+        <span class="w-2 h-2 rounded-full bg-cyanHud animate-pulse"></span>
+        <span class="font-mono text-xs tracking-wider text-cyanHud uppercase">Experiencia Cinematográfica Inmersiva</span>
+      </div>
+
+      <h1 class="text-5xl sm:text-7xl md:text-8xl font-extrabold tracking-tight text-white mb-6 uppercase leading-none">
+        AUGUSTO <br/>
+        <span class="bg-gradient-to-r from-white via-cyanHud to-cyanGlow bg-clip-text text-transparent drop-shadow-[0_10px_35px_rgba(0,242,254,0.25)]">
+          BELLONI
+        </span>
+      </h1>
+
+      <p class="font-mono text-sm sm:text-base md:text-lg text-neutral-300 max-w-2xl mx-auto mb-10 tracking-wide font-light">
+        Cinematografía aérea de alto impacto, vuelos <span class="text-cyanHud font-semibold">FPV dinámicos</span> en interiores y levantamiento fotogramétrico <span class="text-white font-semibold">3D Digital Twin</span> para arquitectura y real estate de lujo.
+      </p>
+
+      <div class="flex flex-wrap items-center justify-center gap-5">
+        <a href="#showreel" class="px-8 py-4 rounded-full bg-gradient-to-r from-cyanHud to-cyanGlow text-black font-bold text-sm tracking-wider uppercase font-mono shadow-[0_0_30px_rgba(0,242,254,0.35)] hover:shadow-[0_0_45px_rgba(0,242,254,0.6)] hover:scale-105 transition duration-300">
+          Explorar Reel 3D
+        </a>
+        <a href="#projects" class="px-8 py-4 rounded-full bg-white/5 border border-white/10 backdrop-blur-lg text-white font-mono text-sm tracking-wider uppercase hover:border-cyanHud/50 hover:bg-white/10 transition duration-300">
+          Ver Propiedades
+        </a>
+      </div>
+    </div>
+
+    <!-- Scroll down indicator -->
+    <a href="#showreel" class="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 font-mono text-[10px] tracking-widest text-neutral-500 hover:text-cyanHud transition">
+      <span>SCROLL TO DIVE</span>
+      <div class="w-4 h-7 rounded-full border border-neutral-700 flex justify-center p-1">
+        <div class="w-1 h-2 rounded-full bg-cyanHud animate-bounce"></div>
+      </div>
+    </a>
+  </section>
+
+  <section id="showreel" class="relative py-28 max-w-6xl mx-auto px-6">
+    <div class="flex flex-col md:flex-row md:items-end justify-between mb-10 border-b border-neutral-800 pb-6">
+      <div>
+        <div class="font-mono text-xs text-cyanHud tracking-widest uppercase mb-1">// CINEMA REEL</div>
+        <h2 class="text-3xl sm:text-4xl font-extrabold text-white">Showreel Cinematográfico</h2>
+      </div>
+      <p class="font-mono text-xs text-neutral-400 max-w-sm mt-3 md:mt-0">
+        Capturas combinadas con drones cinelifter RED Komodo, FPV racing micro-drones y estabilización post-flight DaVinci.
+      </p>
+    </div>
+
+    <!-- 3D Framed Video Player -->
+    <div class="relative group rounded-2xl p-2 bg-gradient-to-b from-white/10 via-white/5 to-transparent border border-white/10 shadow-[0_20px_60px_rgba(0,0,0,0.8)] backdrop-blur-md">
+      <div class="relative rounded-xl overflow-hidden bg-black video-aspect">
+        <iframe 
+          src="https://player.vimeo.com/video/76979871?autoplay=0&loop=1&color=00f2fe&title=0&byline=0&portrait=0" 
+          frameborder="0" 
+          allow="autoplay; fullscreen; picture-in-picture" 
+          allowfullscreen 
+          title="Augusto Belloni Showreel">
+        </iframe>
+      </div>
+      
+      <!-- Telemetry sub-bar -->
+      <div class="mt-3 px-4 py-2 flex flex-wrap items-center justify-between font-mono text-[11px] text-neutral-400 border-t border-white/5">
+        <span class="flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-cyanHud"></span> 4K CINEMATIC MASTER • PRORES 4444 XQ
+        </span>
+        <span class="hidden sm:inline text-neutral-500">COLOR GRADE: FILMCONVERT ARRI LUT</span>
+        <span class="text-neutral-300">AUDIO: DOLBY ATMOS 5.1</span>
+      </div>
+    </div>
+  </section>
+
+  <section id="projects" class="py-24 max-w-7xl mx-auto px-6">
+    <div class="text-center max-w-2xl mx-auto mb-16">
+      <span class="font-mono text-xs text-cyanHud tracking-widest uppercase">// ARCHITECTURAL SHOWCASE</span>
+      <h2 class="text-3xl sm:text-5xl font-extrabold text-white mt-2">Casas y Desarrollos</h2>
+      <p class="text-neutral-400 text-sm mt-4">
+        Pasa el cursor sobre cada proyecto para activar el cálculo de perspectiva 3D y vista de telemetría.
+      </p>
+    </div>
+
+    <!-- Cards 3D Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8 perspective-stage">
+      
+      <!-- Card 1 -->
+      <div class="tilt-card group relative bg-darkDepth rounded-2xl border border-white/10 overflow-hidden preserve-3d smooth-tilt hover:border-cyanHud/50 hover:shadow-[0_15px_35px_rgba(0,242,254,0.15)] flex flex-col cursor-pointer">
+        <div class="relative aspect-[16/10] overflow-hidden bg-neutral-900">
+          <img 
+            src="https://images.unsplash.com/photo-1613490493576-7fde63acd811?auto=format&fit=crop&w=900&q=80" 
+            alt="Villa Moderna La Barra" 
+            class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+            onerror="this.src='https://placehold.co/900x560/111/fff?text=Villa+Moderna'"
+          />
+          <div class="absolute inset-0 bg-gradient-to-t from-darkDepth via-transparent to-transparent opacity-80"></div>
+          <div class="absolute top-4 left-4 font-mono text-[10px] px-2.5 py-1 rounded bg-black/70 border border-cyanHud/40 text-cyanHud backdrop-blur-md">
+            FPV INDOOR/OUTDOOR
+          </div>
+        </div>
+        <div class="p-6 flex-1 flex flex-col justify-between preserve-3d">
+          <div>
+            <h3 class="text-xl font-bold text-white group-hover:text-cyanHud transition">Villa Serena • La Barra</h3>
+            <p class="text-xs text-neutral-400 mt-2 font-light leading-relaxed">
+              Vuelo continuo cruzando piscina infinity, entrada principal de doble altura y master suite sin cortes de edición.
+            </p>
+          </div>
+          <div class="mt-6 pt-4 border-t border-neutral-800 flex items-center justify-between font-mono text-xs text-neutral-500">
+            <span>RESIDENCIAL</span>
+            <span class="text-neutral-300">1,200 m² Lote</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 2 -->
+      <div class="tilt-card group relative bg-darkDepth rounded-2xl border border-white/10 overflow-hidden preserve-3d smooth-tilt hover:border-cyanHud/50 hover:shadow-[0_15px_35px_rgba(0,242,254,0.15)] flex flex-col cursor-pointer">
+        <div class="relative aspect-[16/10] overflow-hidden bg-neutral-900">
+          <img 
+            src="https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=900&q=80" 
+            alt="Mapeo 3D Terreno Inmobiliario" 
+            class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+            onerror="this.src='https://placehold.co/900x560/111/fff?text=3D+Scan+Mesh'"
+          />
+          <div class="absolute inset-0 bg-gradient-to-t from-darkDepth via-transparent to-transparent opacity-80"></div>
+          <div class="absolute top-4 left-4 font-mono text-[10px] px-2.5 py-1 rounded bg-black/70 border border-cyanHud/40 text-cyanHud backdrop-blur-md">
+            DIGITAL TWIN 3D
+          </div>
+        </div>
+        <div class="p-6 flex-1 flex flex-col justify-between preserve-3d">
+          <div>
+            <h3 class="text-xl font-bold text-white group-hover:text-cyanHud transition">Masterplan Los Acantilados</h3>
+            <p class="text-xs text-neutral-400 mt-2 font-light leading-relaxed">
+              Levantamiento de nube de puntos con dron RTK y render 3D interactivo para preventa arquitectónica antes de la construcción.
+            </p>
+          </div>
+          <div class="mt-6 pt-4 border-t border-neutral-800 flex items-center justify-between font-mono text-xs text-neutral-500">
+            <span>TOPOGRAFÍA & VR</span>
+            <span class="text-neutral-300">45 Hectáreas</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 3 -->
+      <div class="tilt-card group relative bg-darkDepth rounded-2xl border border-white/10 overflow-hidden preserve-3d smooth-tilt hover:border-cyanHud/50 hover:shadow-[0_15px_35px_rgba(0,242,254,0.15)] flex flex-col cursor-pointer">
+        <div class="relative aspect-[16/10] overflow-hidden bg-neutral-900">
+          <img 
+            src="https://images.unsplash.com/photo-1512915922686-57c11dde9b6b?auto=format&fit=crop&w=900&q=80" 
+            alt="Skyline Penthouse Film" 
+            class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+            onerror="this.src='https://placehold.co/900x560/111/fff?text=Penthouse+Cinema'"
+          />
+          <div class="absolute inset-0 bg-gradient-to-t from-darkDepth via-transparent to-transparent opacity-80"></div>
+          <div class="absolute top-4 left-4 font-mono text-[10px] px-2.5 py-1 rounded bg-black/70 border border-cyanHud/40 text-cyanHud backdrop-blur-md">
+            TWILIGHT CINEMA
+          </div>
+        </div>
+        <div class="p-6 flex-1 flex flex-col justify-between preserve-3d">
+          <div>
+            <h3 class="text-xl font-bold text-white group-hover:text-cyanHud transition">Iconic Tower Penthouse</h3>
+            <p class="text-xs text-neutral-400 mt-2 font-light leading-relaxed">
+              Producción publicitaria nocturna con estabilizador y ópticas anamórficas para inversores internacionales.
+            </p>
+          </div>
+          <div class="mt-6 pt-4 border-t border-neutral-800 flex items-center justify-between font-mono text-xs text-neutral-500">
+            <span>LUXURY AGENT</span>
+            <span class="text-neutral-300">Piso 42 • Vista 360°</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <section id="services" class="py-24 border-t border-neutral-900 bg-neutral-950/40 relative">
+    <div class="max-w-7xl mx-auto px-6">
+      <div class="flex flex-col md:flex-row md:items-end justify-between mb-16">
+        <div>
+          <span class="font-mono text-xs text-cyanHud tracking-widest uppercase">// CAPACIDADES ESPECIALIZADAS</span>
+          <h2 class="text-3xl sm:text-5xl font-extrabold text-white mt-2">Tecnología de Vuelo &amp; Film</h2>
+        </div>
+        <p class="font-mono text-xs text-neutral-400 max-w-sm mt-3 md:mt-0">
+          Equipamiento de cinematografía digital certificado para misiones complejas en espacios confinados y de gran escala.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-8 font-sans">
+        
+        <div class="p-8 rounded-2xl bg-darkDepth border border-white/5 relative overflow-hidden group hover:border-cyanHud/30 transition duration-300">
+          <div class="text-cyanHud font-mono text-2xl font-bold mb-4">01</div>
+          <h3 class="text-xl font-bold text-white mb-3">Vuelo FPV Inmersivo Interior</h3>
+          <p class="text-sm text-neutral-400 leading-relaxed font-light mb-6">
+            Drones ultralivianos con hélices protegidas con ductos de carbono para volar con total seguridad a centímetros de obras de arte, escaleras de cristal y muebles de diseñador.
+          </p>
+          <ul class="font-mono text-xs text-neutral-500 space-y-2">
+            <li class="flex items-center gap-2"><span class="text-cyanHud">✓</span> Tomas de plano secuencia sin cortes</li>
+            <li class="flex items-center gap-2"><span class="text-cyanHud">✓</span> Dinamismo y sensación de velocidad real</li>
+            <li class="flex items-center gap-2"><span class="text-cyanHud">✓</span> Audio diseño envolvente integrado</li>
+          </ul>
+        </div>
+
+        <div class="p-8 rounded-2xl bg-darkDepth border border-white/5 relative overflow-hidden group hover:border-cyanHud/30 transition duration-300">
+          <div class="text-cyanHud font-mono text-2xl font-bold mb-4">02</div>
+          <h3 class="text-xl font-bold text-white mb-3">Fotogrametría & Gemelos 3D</h3>
+          <p class="text-sm text-neutral-400 leading-relaxed font-light mb-6">
+            Escaneo aéreo sistemático con sensores de alta resolución para generar mallas poligonales en 3D, mapas de elevación (DEM) y modelos compatibles con Unreal Engine o Blender.
+          </p>
+          <ul class="font-mono text-xs text-neutral-500 space-y-2">
+            <li class="flex items-center gap-2"><span class="text-cyanHud">✓</span> Levantamientos topográficos milimétricos</li>
+            <li class="flex items-center gap-2"><span class="text-cyanHud">✓</span> Modelos exportables (.OBJ, .FBX, .GLB)</li>
+            <li class="flex items-center gap-2"><span class="text-cyanHud">✓</span> Integración para render y preventa</li>
+          </ul>
+        </div>
+
+        <div class="p-8 rounded-2xl bg-darkDepth border border-white/5 relative overflow-hidden group hover:border-cyanHud/30 transition duration-300">
+          <div class="text-cyanHud font-mono text-2xl font-bold mb-4">03</div>
+          <h3 class="text-xl font-bold text-white mb-3">Dirección de Fotografía</h3>
+          <p class="text-sm text-neutral-400 leading-relaxed font-light mb-6">
+            Spots comerciales con cámaras de cine, iluminación controlada en la hora dorada/azul y gradación de color personalizada según la identidad de la desarrolladora inmobiliaria.
+          </p>
+          <ul class="font-mono text-xs text-neutral-500 space-y-2">
+            <li class="flex items-center gap-2"><span class="text-cyanHud">✓</span> Formato cinematográfico 2.39:1 o 9:16 Reels</li>
+            <li class="flex items-center gap-2"><span class="text-cyanHud">✓</span> Corrección de color en DaVinci Resolve Studio</li>
+            <li class="flex items-center gap-2"><span class="text-cyanHud">✓</span> Entrega en 4K UHD para TV y Web</li>
+          </ul>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <section id="contact" class="py-28 max-w-5xl mx-auto px-6">
+    <div class="relative rounded-3xl p-8 sm:p-14 bg-gradient-to-b from-darkDepth to-[#090b10] border border-cyanHud/20 overflow-hidden shadow-[0_0_80px_rgba(0,242,254,0.08)]">
+      
+      <!-- Background HUD accent -->
+      <div class="absolute -right-20 -top-20 w-80 h-80 rounded-full bg-cyanHud/10 blur-3xl pointer-events-none"></div>
+
+      <div class="relative z-10 grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
+        <div>
+          <span class="font-mono text-xs text-cyanHud tracking-widest uppercase">// INICIAR PRODUCCIÓN</span>
+          <h2 class="text-3xl sm:text-4xl font-extrabold text-white mt-2 mb-4">¿Filmamos tu próxima propiedad?</h2>
+          <p class="text-sm text-neutral-400 leading-relaxed mb-6 font-light">
+            Escríbeme con la ubicación, tipo de propiedad (mansión, desarrollo, terreno) y fechas tentativas para armar un plan de rodaje a medida.
+          </p>
+
+          <div class="space-y-3 font-mono text-xs">
+            <div class="flex items-center gap-3 text-neutral-300">
+              <span class="w-2 h-2 rounded-full bg-cyanHud"></span>
+              <span>Ubicación: Disponible para viajes nacionales e internacionales</span>
+            </div>
+            <div class="flex items-center gap-3 text-neutral-300">
+              <span class="w-2 h-2 rounded-full bg-cyanHud"></span>
+              <span>Piloto y Operador Drone Certificado</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Direct Actions -->
+        <div class="flex flex-col gap-4">
+          <a href="mailto:contacto@augustobelloni.com" class="p-5 rounded-xl bg-white text-black font-mono font-bold text-center text-sm tracking-wider uppercase hover:bg-cyanHud hover:shadow-[0_0_30px_rgba(0,242,254,0.4)] transition duration-300 flex items-center justify-center gap-3">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+            <span>contacto@augustobelloni.com</span>
+          </a>
+
+          <a href="https://wa.me/" target="_blank" rel="noopener noreferrer" class="p-5 rounded-xl bg-neutral-900 border border-neutral-700 text-white font-mono font-semibold text-center text-sm tracking-wider uppercase hover:border-emerald-500 hover:text-emerald-400 transition duration-300 flex items-center justify-center gap-3">
+            <span>Consultar por WhatsApp</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="border-t border-neutral-900 py-12 px-6">
+    <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6 font-mono text-xs text-neutral-500">
+      <div>
+        <p class="text-neutral-400 font-semibold">AUGUSTO BELLONI — FILMMAKER & 3D DRONE PILOT</p>
+        <p class="mt-1">Real Estate • Aerial Cinematography • Photogrammetry</p>
+      </div>
+
+      <div class="flex items-center gap-6">
+        <a href="https://instagram.com" target="_blank" rel="noreferrer" class="hover:text-cyanHud transition">Instagram</a>
+        <a href="https://vimeo.com" target="_blank" rel="noreferrer" class="hover:text-cyanHud transition">Vimeo</a>
+        <a href="https://youtube.com" target="_blank" rel="noreferrer" class="hover:text-cyanHud transition">YouTube</a>
+        <a href="https://linkedin.com" target="_blank" rel="noreferrer" class="hover:text-cyanHud transition">LinkedIn</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // Parallax elements
+    const heroBg = document.getElementById('parallax-layer-bg');
+    const heroMid = document.getElementById('parallax-layer-mid');
+    const heroFg = document.getElementById('parallax-layer-fg');
+    const tiltCards = document.querySelectorAll('.tilt-card');
+
+    let mouseX = 0;
+    let mouseY = 0;
+    let targetX = 0;
+    let targetY = 0;
+
+    // Smooth mouse position listener
+    window.addEventListener('mousemove', (e) => {
+      const halfWidth = window.innerWidth / 2;
+      const halfHeight = window.innerHeight / 2;
+      targetX = (e.clientX - halfWidth) / halfWidth; // Normalizado -1 a 1
+      targetY = (e.clientY - halfHeight) / halfHeight;
+    });
+
+    // Combined Scroll & Mouse Parallax Loop
+    function updateParallax() {
+      // Linear interpolation for silky inertia
+      mouseX += (targetX - mouseX) * 0.08;
+      mouseY += (targetY - mouseY) * 0.08;
+
+      const scrollY = window.pageYOffset || document.documentElement.scrollTop;
+
+      // Apply distinct depth translation and 3D rotation to each layer
+      if (heroBg) {
+        const bgY = scrollY * 0.35 + mouseY * 15;
+        const bgX = mouseX * 15;
+        heroBg.style.transform = `translate3d(${bgX}px, ${bgY}px, -100px) scale(1.15)`;
+      }
+
+      if (heroMid) {
+        const midY = scrollY * 0.2 + mouseY * 25;
+        const midX = mouseX * 25;
+        heroMid.style.transform = `translate3d(${midX}px, ${midY}px, 0px) rotateX(${-mouseY * 4}deg) rotateY(${mouseX * 4}deg)`;
+      }
+
+      if (heroFg) {
+        const fgY = scrollY * -0.15 + mouseY * 40;
+        const fgX = mouseX * 40;
+        heroFg.style.transform = `translate3d(${fgX}px, ${fgY}px, 60px) rotateX(${-mouseY * 6}deg) rotateY(${mouseX * 8}deg)`;
+      }
+
+      requestAnimationFrame(updateParallax);
+    }
+    requestAnimationFrame(updateParallax);
+
+    // Interactive 3D Card Hover Tilt Effect
+    tiltCards.forEach(card => {
+      card.addEventListener('mousemove', (e) => {
+        const rect = card.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        const centerX = rect.width / 2;
+        const centerY = rect.height / 2;
+
+        const rotateX = ((y - centerY) / centerY) * -12;
+        const rotateY = ((x - centerX) / centerX) * 12;
+
+        card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateZ(16px)`;
+      });
+
+      card.addEventListener('mouseleave', () => {
+        card.style.transform = 'perspective(1000px) rotateX(0deg) rotateY(0deg) translateZ(0px)';
+      });
+    });
+  </script>
+</body>
+</html>
